@@ -20,7 +20,11 @@ export default function App() {
       <h1>Vite + React</h1>
       <Card.Root>
         <Card.Header>
-          <button onClick={() => setCount((count) => count + 1)}>
+          <button
+            onClick={() => {
+              setCount((count) => count + 1);
+            }}
+          >
             count is {count}
           </button>
         </Card.Header>

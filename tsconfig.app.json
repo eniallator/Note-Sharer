@@ -3,6 +3,7 @@
     "allowImportingTsExtensions": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
+    "composite": true,
     "erasableSyntaxOnly": true,
     "declaration": true,
     "downlevelIteration": true,

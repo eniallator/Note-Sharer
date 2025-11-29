@@ -1,0 +1,191 @@
+import {
+  Box,
+  chakra,
+  Code,
+  Image,
+  Text,
+  type BoxProps,
+} from "@chakra-ui/react";
+import { useMemo, type ReactElement } from "react";
+import markdownTree from "./tree.ts";
+import type { Environment, Node as TreeNode } from "./types.ts";
+import { checkExhausted } from "@/utils/core.ts";
+
+interface MarkdownProps extends BoxProps {
+  template: string;
+  environment?: Environment;
+}
+
+export default function Markdown(props: MarkdownProps): ReactElement {
+  const { template, environment, ...rest } = props;
+
+  const tree = useMemo(
+    () => markdownTree(template, environment),
+    [environment, template]
+  );
+
+  return (
+    <Box p="3" className="rendered-markdown">
+      <ChildNodes value={tree.childNodes} {...rest} />
+    </Box>
+  );
+}
+
+interface ChildNodesProps extends BoxProps {
+  value: TreeNode[];
+}
+
+function ChildNodes(props: ChildNodesProps): ReactElement {
+  const { value, ...rest } = props;
+
+  return (
+    <>
+      {value.map((node, i) => (
+        <Node key={i} value={node} {...rest} />
+      ))}
+    </>
+  );
+}
+
+interface NodeProps extends BoxProps {
+  value: TreeNode;
+}
+
+function Node(props: NodeProps): ReactElement {
+  const { value, ...rest } = props;
+
+  const content = useMemo(() => {
+    switch (value.type) {
+      case "BlockQuote":
+        return (
+          <Box {...rest} ms="4" ps="2" borderStartWidth="4px">
+            <ChildNodes value={value.childNodes} {...rest} />
+          </Box>
+        );
+
+      case "Break":
+        return value.variant === "Line" ? <chakra.br /> : <> </>;
+
+      case "Code":
+        return (
+          <Code maxW="100%" {...rest} px="0.2em">
+            {value.code}
+          </Code>
+        );
+
+      case "CodeBlock":
+        return (
+          <Code display="block" maxW="100%" {...rest} whiteSpace="pre">
+            {value.code}
+          </Code>
+        );
+
+      case "CustomBlock":
+      case "CustomInline":
+        return <>{value.text}</>;
+
+      case "Document":
+        return <ChildNodes value={value.childNodes} {...rest} />;
+
+      case "HTMLBlock":
+        return (
+          <chakra.div
+            dangerouslySetInnerHTML={{ __html: value.html }}
+            {...rest}
+          />
+        );
+
+      case "HTMLInline":
+        return (
+          <chakra.span
+            dangerouslySetInnerHTML={{ __html: value.html }}
+            {...rest}
+          />
+        );
+
+      case "Heading":
+        return (
+          <Heading level={value.level} mb="4" {...rest}>
+            <ChildNodes value={value.childNodes} {...rest} />
+          </Heading>
+        );
+
+      case "Image":
+        return (
+          <chakra.figure>
+            <Image src={value.src} title={value.title ?? undefined} {...rest} />
+            <chakra.figcaption {...rest}>
+              <ChildNodes value={value.childNodes} {...rest} />
+            </chakra.figcaption>
+          </chakra.figure>
+        );
+
+      case "Item":
+        return (
+          <ListItem {...rest}>
+            <ChildNodes value={value.childNodes} {...rest} />
+          </ListItem>
+        );
+
+      case "Link":
+        return (
+          <Link
+            color="blue.500"
+            isExternal={true}
+            href={value.href}
+            title={value.title ?? undefined}
+            {...rest}
+          >
+            <ChildNodes value={value.childNodes} {...rest} />
+          </Link>
+        );
+
+      case "List":
+        return value.variant === "bullet" ? (
+          <UnorderedList
+            lineHeight={value.tight ? "1.1rem" : "1.7rem"}
+            {...rest}
+          >
+            <ChildNodes value={value.childNodes} {...rest} />
+          </UnorderedList>
+        ) : (
+          <OrderedList
+            lineHeight={value.tight ? "1.1rem" : "1.7rem"}
+            start={value.start ?? undefined}
+            {...rest}
+          >
+            <ChildNodes value={value.childNodes} {...rest} />
+          </OrderedList>
+        );
+
+      case "Paragraph":
+        return (
+          <Text mb="2" {...rest}>
+            <ChildNodes value={value.childNodes} {...rest} />
+          </Text>
+        );
+
+      case "Text":
+        return <chakra.span {...rest}>{value.text}</chakra.span>;
+
+      case "TextStyle":
+        return value.variant === "Strong" ? (
+          <chakra.strong {...rest}>
+            <ChildNodes value={value.childNodes} {...rest} />
+          </chakra.strong>
+        ) : (
+          <chakra.em {...rest}>
+            <ChildNodes value={value.childNodes} {...rest} />
+          </chakra.em>
+        );
+
+      case "ThematicBreak":
+        return <chakra.hr mb="4" {...rest} />;
+
+      default:
+        return checkExhausted(value);
+    }
+  }, [rest, value]);
+
+  return content;
+}
