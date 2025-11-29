@@ -1,4 +1,4 @@
-import { raise } from "./core.ts";
+import { raise } from "@/utils/core.ts";
 
 type Zippable = readonly [unknown[], unknown[], ...unknown[][]];
 

@@ -2,6 +2,7 @@
   "compilerOptions": {
     "allowImportingTsExtensions": true,
     "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
     "erasableSyntaxOnly": true,
     "declaration": true,
     "downlevelIteration": true,
@@ -19,6 +20,7 @@
     "noUncheckedSideEffectImports": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "paths": { "@/*": ["./src/*"] },
     "skipLibCheck": true,
     "strict": true,
     "target": "esnext",
