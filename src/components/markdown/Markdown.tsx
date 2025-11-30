@@ -1,17 +1,21 @@
+import { checkExhausted } from "@/utils/core.ts";
 import {
   Box,
   chakra,
   Code,
+  Heading,
   Image,
+  Link,
+  List,
   Text,
-  type BoxProps,
+  type HTMLChakraProps,
 } from "@chakra-ui/react";
-import { useMemo, type ReactElement } from "react";
+import { useMemo, type ElementType, type ReactElement } from "react";
+import { headingLevelSize } from "./helpers.ts";
 import markdownTree from "./tree.ts";
 import type { Environment, Node as TreeNode } from "./types.ts";
-import { checkExhausted } from "@/utils/core.ts";
 
-interface MarkdownProps extends BoxProps {
+interface MarkdownProps extends HTMLChakraProps<ElementType> {
   template: string;
   environment?: Environment;
 }
@@ -31,7 +35,7 @@ export default function Markdown(props: MarkdownProps): ReactElement {
   );
 }
 
-interface ChildNodesProps extends BoxProps {
+interface ChildNodesProps extends HTMLChakraProps<ElementType> {
   value: TreeNode[];
 }
 
@@ -47,7 +51,7 @@ function ChildNodes(props: ChildNodesProps): ReactElement {
   );
 }
 
-interface NodeProps extends BoxProps {
+interface NodeProps extends HTMLChakraProps<ElementType> {
   value: TreeNode;
 }
 
@@ -105,7 +109,7 @@ function Node(props: NodeProps): ReactElement {
 
       case "Heading":
         return (
-          <Heading level={value.level} mb="4" {...rest}>
+          <Heading size={headingLevelSize[value.level]} mb="4" {...rest}>
             <ChildNodes value={value.childNodes} {...rest} />
           </Heading>
         );
@@ -122,16 +126,15 @@ function Node(props: NodeProps): ReactElement {
 
       case "Item":
         return (
-          <ListItem {...rest}>
+          <List.Item {...rest}>
             <ChildNodes value={value.childNodes} {...rest} />
-          </ListItem>
+          </List.Item>
         );
 
       case "Link":
         return (
           <Link
             color="blue.500"
-            isExternal={true}
             href={value.href}
             title={value.title ?? undefined}
             {...rest}
@@ -142,20 +145,19 @@ function Node(props: NodeProps): ReactElement {
 
       case "List":
         return value.variant === "bullet" ? (
-          <UnorderedList
-            lineHeight={value.tight ? "1.1rem" : "1.7rem"}
-            {...rest}
-          >
+          <List.Root lineHeight={value.tight ? "1.1rem" : "1.7rem"} {...rest}>
             <ChildNodes value={value.childNodes} {...rest} />
-          </UnorderedList>
+          </List.Root>
         ) : (
-          <OrderedList
+          <List.Root
+            as="ol"
             lineHeight={value.tight ? "1.1rem" : "1.7rem"}
-            start={value.start ?? undefined}
+            // TODO: Figure out a way to pass this through!
+            data-start={value.start ?? undefined}
             {...rest}
           >
             <ChildNodes value={value.childNodes} {...rest} />
-          </OrderedList>
+          </List.Root>
         );
 
       case "Paragraph":

@@ -1,4 +1,3 @@
-import { checkExhausted } from "@/utils/core.ts";
 import { tuple } from "@/utils/tuple.ts";
 import { Node as MarkdownNode } from "commonmark";
 import { type Guard } from "deep-guards";
@@ -141,35 +140,6 @@ export type BranchNode =
   | Heading;
 
 export type Node = BranchNode | LeafNode;
-
-export function isBranch(node: Node): node is BranchNode {
-  switch (node.type) {
-    case "Text":
-    case "TextStyle":
-    case "Break":
-    case "HTMLInline":
-    case "HTMLBlock":
-    case "Code":
-    case "CodeBlock":
-    case "ThematicBreak":
-    case "CustomInline":
-    case "CustomBlock":
-      return false;
-
-    case "Document":
-    case "Link":
-    case "Image":
-    case "Paragraph":
-    case "BlockQuote":
-    case "Item":
-    case "List":
-    case "Heading":
-      return true;
-
-    default:
-      return checkExhausted(node);
-  }
-}
 
 export interface Tree {
   childNodes: Node[];

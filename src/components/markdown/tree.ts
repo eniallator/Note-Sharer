@@ -13,17 +13,14 @@ const parser = new Parser();
 
 const CONTEXT_VAR_REGEX = /{{(?<var>[^}]+)}}/;
 
-function applyEnvironment(rawString: string, { getAs }: Environment): string {
-  return rawString.replaceAll(
+const eatWhitespace = (raw: string): string => raw.replaceAll(/ +/, " ").trim();
+
+const applyEnvironment = (rawString: string, { getAs }: Environment): string =>
+  rawString.replaceAll(
     CONTEXT_VAR_REGEX,
     (_original, contextVar: string) =>
-      getAs(sanitize(contextVar), isString) ?? ""
+      getAs(eatWhitespace(contextVar), isString) ?? ""
   );
-}
-
-export function sanitize(raw: string): string {
-  return raw.replaceAll(/ +/, " ").trim();
-}
 
 export default function markdownTree(
   template: string,
@@ -39,10 +36,10 @@ export default function markdownTree(
     lastCursor().childNodes.push(node);
     cursorStack.push(node);
   };
-  function exitBranch() {
+  const exitBranch = () => {
     cursorStack.pop();
-  }
-  function addLeaf(node: LeafNode) {
+  };
+  const addLeaf = (node: LeafNode) => {
     const cursor = lastCursor();
     const lastChild = cursor.childNodes.at(-1);
     if (node.type === "Text" && lastChild?.type === "Text") {
@@ -50,7 +47,7 @@ export default function markdownTree(
     } else {
       cursor.childNodes.push(node);
     }
-  }
+  };
 
   const walker = parser
     .parse(
