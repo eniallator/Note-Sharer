@@ -76,10 +76,7 @@ export default function markdownTree(
           break;
 
         case "code":
-          addLeaf({
-            type: "Code",
-            code: getOrThrow("literal"),
-          });
+          addLeaf({ type: "Code", code: getOrThrow("literal") });
           break;
 
         case "code_block":
@@ -91,17 +88,11 @@ export default function markdownTree(
           break;
 
         case "custom_block":
-          addLeaf({
-            type: "CustomBlock",
-            text: getOrThrow("literal"),
-          });
+          addLeaf({ type: "CustomBlock", text: getOrThrow("literal") });
           break;
 
         case "custom_inline":
-          addLeaf({
-            type: "CustomInline",
-            text: getOrThrow("literal"),
-          });
+          addLeaf({ type: "CustomInline", text: getOrThrow("literal") });
           break;
 
         case "document":
@@ -109,18 +100,14 @@ export default function markdownTree(
           break;
 
         case "emph":
-          enterBranch({
-            type: "TextStyle",
-            variant: "Emph",
-            childNodes: [],
-          });
+          enterBranch({ type: "TextStyle", variant: "Emph", childNodes: [] });
           break;
 
         case "heading":
           enterBranch({
             type: "Heading",
             level:
-              headingLevels[Math.max(1, Math.min(6, node.level))] ??
+              headingLevels[Math.max(1, Math.min(6, node.level)) - 1] ??
               raise(new Error("No heading level found!")),
             childNodes: [],
           });
@@ -144,10 +131,7 @@ export default function markdownTree(
           break;
 
         case "item":
-          enterBranch({
-            type: "Item",
-            childNodes: [],
-          });
+          enterBranch({ type: "Item", childNodes: [] });
           break;
 
         case "linebreak":
@@ -175,10 +159,7 @@ export default function markdownTree(
           break;
 
         case "paragraph":
-          enterBranch({
-            type: "Paragraph",
-            childNodes: [],
-          });
+          enterBranch({ type: "Paragraph", childNodes: [] });
           break;
 
         case "softbreak":

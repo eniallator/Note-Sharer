@@ -3,6 +3,8 @@ import {
   Box,
   chakra,
   Code,
+  Em,
+  For,
   Heading,
   Image,
   Link,
@@ -43,11 +45,9 @@ function ChildNodes(props: ChildNodesProps): ReactElement {
   const { value, ...rest } = props;
 
   return (
-    <>
-      {value.map((node, i) => (
-        <Node key={i} value={node} {...rest} />
-      ))}
-    </>
+    <For each={value}>
+      {(value, i) => <Node key={i} value={value} {...rest} />}
+    </For>
   );
 }
 
@@ -168,17 +168,17 @@ function Node(props: NodeProps): ReactElement {
         );
 
       case "Text":
-        return <chakra.span {...rest}>{value.text}</chakra.span>;
+        return <Text {...rest}>{value.text}</Text>;
 
       case "TextStyle":
         return value.variant === "Strong" ? (
-          <chakra.strong {...rest}>
+          <Text fontWeight="bold" {...rest}>
             <ChildNodes value={value.childNodes} {...rest} />
-          </chakra.strong>
+          </Text>
         ) : (
-          <chakra.em {...rest}>
+          <Em {...rest}>
             <ChildNodes value={value.childNodes} {...rest} />
-          </chakra.em>
+          </Em>
         );
 
       case "ThematicBreak":
