@@ -1,5 +1,5 @@
 import { tuple } from "@/utils/tuple.ts";
-import { Node as MarkdownNode } from "commonmark";
+import type { HeadingProps } from "@chakra-ui/react";
 import { type Guard } from "deep-guards";
 
 export interface Environment {
@@ -105,11 +105,11 @@ export interface Item {
 
 export interface List {
   type: "List";
-  variant: MarkdownNode["listType"];
+  variant: "bullet" | "ordered";
   tight: boolean;
   start: number | null;
-  delimiter: MarkdownNode["listDelimiter"] | null;
-  childNodes: Node[];
+  delimiter: ")" | "." | null;
+  items: Item[];
 }
 
 export const headingLevels = tuple(
@@ -121,6 +121,17 @@ export const headingLevels = tuple(
   "SubBlock"
 );
 export type HeadingLevel = (typeof headingLevels)[number];
+export const headingLevelSize: Record<
+  HeadingLevel,
+  NonNullable<HeadingProps["size"]>
+> = {
+  Page: "2xl",
+  SubPage: "xl",
+  Section: "lg",
+  SubSection: "md",
+  Block: "sm",
+  SubBlock: "xs",
+};
 
 export interface Heading {
   type: "Heading";
@@ -135,12 +146,12 @@ export type BranchNode =
   | Image
   | Paragraph
   | BlockQuote
-  | Item
   | List
   | Heading;
 
 export type Node = BranchNode | LeafNode;
 
 export interface Tree {
+  type: "Tree";
   childNodes: Node[];
 }

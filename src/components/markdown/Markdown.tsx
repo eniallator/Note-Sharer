@@ -13,9 +13,12 @@ import {
   type HTMLChakraProps,
 } from "@chakra-ui/react";
 import { useMemo, type ElementType, type ReactElement } from "react";
-import { headingLevelSize } from "./helpers.ts";
-import markdownTree from "./tree.ts";
-import type { Environment, Node as TreeNode } from "./types.ts";
+import { markdownTree } from "./tree.ts";
+import {
+  headingLevelSize,
+  type Environment,
+  type Node as TreeNode,
+} from "./types.ts";
 
 interface MarkdownProps extends HTMLChakraProps<ElementType> {
   template: string;
@@ -124,13 +127,6 @@ function Node(props: NodeProps): ReactElement {
           </chakra.figure>
         );
 
-      case "Item":
-        return (
-          <List.Item {...rest}>
-            <ChildNodes value={value.childNodes} {...rest} />
-          </List.Item>
-        );
-
       case "Link":
         return (
           <Link
@@ -146,17 +142,24 @@ function Node(props: NodeProps): ReactElement {
       case "List":
         return value.variant === "bullet" ? (
           <List.Root lineHeight={value.tight ? "1.1rem" : "1.7rem"} {...rest}>
-            <ChildNodes value={value.childNodes} {...rest} />
+            {value.items.map((item, index) => (
+              <List.Item key={index} {...rest}>
+                <ChildNodes value={item.childNodes} {...rest} />
+              </List.Item>
+            ))}
           </List.Root>
         ) : (
           <List.Root
             as="ol"
             lineHeight={value.tight ? "1.1rem" : "1.7rem"}
-            // TODO: Figure out a way to pass this through!
-            data-start={value.start ?? undefined}
             {...rest}
           >
-            <ChildNodes value={value.childNodes} {...rest} />
+            {value.items.map((item, index) => (
+              <List.Item key={index} {...rest}>
+                <List.Indicator>{index + (value.start ?? 1)}</List.Indicator>
+                <ChildNodes value={item.childNodes} {...rest} />
+              </List.Item>
+            ))}
           </List.Root>
         );
 
@@ -168,7 +171,11 @@ function Node(props: NodeProps): ReactElement {
         );
 
       case "Text":
-        return <Text {...rest}>{value.text}</Text>;
+        return (
+          <Text as="span" {...rest}>
+            {value.text}
+          </Text>
+        );
 
       case "TextStyle":
         return value.variant === "Strong" ? (

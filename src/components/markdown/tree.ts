@@ -5,6 +5,7 @@ import {
   headingLevels,
   type BranchNode,
   type Environment,
+  type Item,
   type LeafNode,
   type Tree,
 } from "./types.ts";
@@ -13,7 +14,8 @@ const parser = new Parser();
 
 const CONTEXT_VAR_REGEX = /{{(?<var>[^}]+)}}/;
 
-const eatWhitespace = (raw: string): string => raw.replaceAll(/ +/, " ").trim();
+const eatWhitespace = (raw: string): string =>
+  raw.trim().replaceAll(/(\s)\s+/, "$1");
 
 const applyEnvironment = (rawString: string, { getAs }: Environment): string =>
   rawString.replaceAll(
@@ -22,30 +24,46 @@ const applyEnvironment = (rawString: string, { getAs }: Environment): string =>
       getAs(eatWhitespace(contextVar), isString) ?? ""
   );
 
-export default function markdownTree(
+export const markdownTree = (
   template: string,
   environment?: Environment
-): Tree {
-  const tree = { childNodes: [] };
-  const cursorStack: (BranchNode | Tree)[] = [tree];
+): Tree => {
+  const tree: Tree = { type: "Tree", childNodes: [] };
+  const cursorStack: (Item | BranchNode | Tree)[] = [tree];
 
-  const lastCursor = (): BranchNode | Tree =>
+  const lastCursor = (): Item | BranchNode | Tree =>
     cursorStack.at(-1) ?? raise(new Error("No Cursor found!"));
 
-  const enterBranch = (node: BranchNode) => {
-    lastCursor().childNodes.push(node);
-    cursorStack.push(node);
+  const enterBranch = (node: BranchNode | Item) => {
+    const cursor = lastCursor();
+    if (cursor.type === "List" && node.type === "Item") {
+      cursor.items.push(node);
+      cursorStack.push(node);
+    } else if (cursor.type !== "List" && node.type !== "Item") {
+      cursor.childNodes.push(node);
+      cursorStack.push(node);
+    } else {
+      raise(
+        new Error(`Unexpected child type ${node.type} from ${cursor.type}`)
+      );
+    }
   };
   const exitBranch = () => {
     cursorStack.pop();
   };
   const addLeaf = (node: LeafNode) => {
     const cursor = lastCursor();
-    const lastChild = cursor.childNodes.at(-1);
-    if (node.type === "Text" && lastChild?.type === "Text") {
-      lastChild.text += node.text;
+    if (cursor.type !== "List") {
+      const lastChild = cursor.childNodes.at(-1);
+      if (node.type === "Text" && lastChild?.type === "Text") {
+        lastChild.text += node.text;
+      } else {
+        cursor.childNodes.push(node);
+      }
     } else {
-      cursor.childNodes.push(node);
+      raise(
+        new Error(`Unexpected child type ${node.type} from ${cursor.type}`)
+      );
     }
   };
 
@@ -154,7 +172,7 @@ export default function markdownTree(
             tight: getOrThrow("listTight"),
             start: node.listStart,
             delimiter: node.listDelimiter,
-            childNodes: [],
+            items: [],
           });
           break;
 
@@ -203,4 +221,4 @@ export default function markdownTree(
   }
 
   return tree;
-}
+};
