@@ -1,7 +1,9 @@
 import { checkExhausted } from "@/utils/core.ts";
 import {
+  Badge,
   Box,
   chakra,
+  Checkbox,
   Code,
   Em,
   For,
@@ -9,192 +11,275 @@ import {
   Image,
   Link,
   List,
+  Table,
   Text,
-  type HTMLChakraProps,
 } from "@chakra-ui/react";
-import { useMemo, type ElementType, type ReactElement } from "react";
-import { markdownTree } from "./tree.ts";
+import { isNumber } from "deep-guards";
+import type { Token } from "marked";
+import { useMemo, type ReactElement } from "react";
 import {
-  headingLevelSize,
-  type Environment,
-  type Node as TreeNode,
-} from "./types.ts";
+  tokenizeMarkdown,
+  unsafeMarkdownToken,
+  type MarkdownToken,
+} from "./parse.js";
+import { headingLevelSize, type Environment } from "./types.js";
 
-interface MarkdownProps extends HTMLChakraProps<ElementType> {
+interface MarkdownProps {
   template: string;
-  environment?: Environment;
+  environment: Environment;
 }
 
 export default function Markdown(props: MarkdownProps): ReactElement {
-  const { template, environment, ...rest } = props;
+  const { template, environment } = props;
 
-  const tree = useMemo(
-    () => markdownTree(template, environment),
+  const tokenized = useMemo(
+    () => tokenizeMarkdown(template, environment),
     [environment, template]
   );
 
-  return (
-    <Box p="3" className="rendered-markdown">
-      <ChildNodes value={tree.childNodes} {...rest} />
-    </Box>
-  );
+  return <ChildTokenNodes tokens={tokenized} />;
 }
 
-interface ChildNodesProps extends HTMLChakraProps<ElementType> {
-  value: TreeNode[];
+interface ChildTokenNodesProps {
+  tokens: (Token | MarkdownToken)[];
 }
-
-function ChildNodes(props: ChildNodesProps): ReactElement {
-  const { value, ...rest } = props;
+function ChildTokenNodes(props: ChildTokenNodesProps): ReactElement {
+  const { tokens } = props;
 
   return (
-    <For each={value}>
-      {(value, i) => <Node key={i} value={value} {...rest} />}
+    <For each={tokens}>
+      {(child, index) => (
+        <TokenNode key={index} token={unsafeMarkdownToken(child)} />
+      )}
     </For>
   );
 }
 
-interface NodeProps extends HTMLChakraProps<ElementType> {
-  value: TreeNode;
+interface TokenNodeProps {
+  token: MarkdownToken;
 }
 
-function Node(props: NodeProps): ReactElement {
-  const { value, ...rest } = props;
+function TokenNode(props: TokenNodeProps): ReactElement {
+  const { token } = props;
 
-  const content = useMemo(() => {
-    switch (value.type) {
-      case "BlockQuote":
-        return (
-          <Box {...rest} ms="4" ps="2" borderStartWidth="4px">
-            <ChildNodes value={value.childNodes} {...rest} />
-          </Box>
-        );
+  switch (token.type) {
+    case "blockquote":
+      return (
+        <Box ms="4" ps="2" borderStartWidth="4px">
+          <ChildTokenNodes tokens={token.tokens} />
+        </Box>
+      );
 
-      case "Break":
-        return value.variant === "Line" ? <chakra.br /> : <> </>;
+    case "br":
+      return <chakra.br />;
 
-      case "Code":
-        return (
-          <Code maxW="100%" {...rest} px="0.2em">
-            {value.code}
-          </Code>
-        );
+    case "checkbox":
+      return (
+        <Checkbox.Root checked={token.checked} size="sm">
+          <Checkbox.HiddenInput />
+          <Checkbox.Control />
+        </Checkbox.Root>
+      );
 
-      case "CodeBlock":
-        return (
-          <Code display="block" maxW="100%" {...rest} whiteSpace="pre">
-            {value.code}
-          </Code>
-        );
+    case "code":
+      return (
+        <Code
+          display="block"
+          maxW="100%"
+          mb="2"
+          whiteSpace="pre"
+          lang={token.lang}
+        >
+          {token.text}
+        </Code>
+      );
 
-      case "CustomBlock":
-      case "CustomInline":
-        return <>{value.text}</>;
+    case "codespan":
+      return (
+        <Code maxW="100%" px="0.2em">
+          {token.text}
+        </Code>
+      );
 
-      case "Document":
-        return <ChildNodes value={value.childNodes} {...rest} />;
+    case "def":
+      return <></>;
 
-      case "HTMLBlock":
-        return (
-          <chakra.div
-            dangerouslySetInnerHTML={{ __html: value.html }}
-            {...rest}
-          />
-        );
+    case "del":
+      return (
+        <chakra.del>
+          <ChildTokenNodes tokens={token.tokens} />
+        </chakra.del>
+      );
 
-      case "HTMLInline":
-        return (
-          <chakra.span
-            dangerouslySetInnerHTML={{ __html: value.html }}
-            {...rest}
-          />
-        );
+    case "em":
+      return (
+        <Em>
+          <ChildTokenNodes tokens={token.tokens} />
+        </Em>
+      );
 
-      case "Heading":
-        return (
-          <Heading size={headingLevelSize[value.level]} mb="4" {...rest}>
-            <ChildNodes value={value.childNodes} {...rest} />
-          </Heading>
-        );
+    case "escape":
+      return <>{token.text}</>;
 
-      case "Image":
-        return (
-          <chakra.figure>
-            <Image src={value.src} title={value.title ?? undefined} {...rest} />
-            <chakra.figcaption {...rest}>
-              <ChildNodes value={value.childNodes} {...rest} />
-            </chakra.figcaption>
-          </chakra.figure>
-        );
+    case "heading":
+      return (
+        <Heading size={headingLevelSize[token.depth - 1]} mb="4">
+          <ChildTokenNodes tokens={token.tokens} />
+        </Heading>
+      );
 
-      case "Link":
-        return (
-          <Link
-            color="blue.500"
-            href={value.href}
-            title={value.title ?? undefined}
-            {...rest}
-          >
-            <ChildNodes value={value.childNodes} {...rest} />
-          </Link>
-        );
+    case "hr":
+      return <chakra.hr mb="4" />;
 
-      case "List":
-        return value.variant === "bullet" ? (
-          <List.Root lineHeight={value.tight ? "1.1rem" : "1.7rem"} {...rest}>
-            {value.items.map((item, index) => (
-              <List.Item key={index} {...rest}>
-                <ChildNodes value={item.childNodes} {...rest} />
+    case "html":
+      return token.block ? (
+        <chakra.div dangerouslySetInnerHTML={{ __html: token.text }} />
+      ) : (
+        <chakra.span dangerouslySetInnerHTML={{ __html: token.text }} />
+      );
+
+    case "image":
+      return (
+        <>
+          <Image src={token.href} title={token.title ?? undefined} />
+          <ChildTokenNodes tokens={token.tokens} />
+        </>
+      );
+
+    case "link":
+      return (
+        <Link
+          color="blue.500"
+          href={token.href}
+          title={token.title ?? undefined}
+        >
+          <ChildTokenNodes tokens={token.tokens} />
+        </Link>
+      );
+
+    case "list":
+      return token.ordered ? (
+        <List.Root
+          as="ol"
+          {...{ start: isNumber(token.start) ? token.start : 1 }}
+        >
+          <For each={token.items}>
+            {(item, index) => (
+              <List.Item
+                key={index}
+                lineHeight={item.loose ? "1.7rem" : "1.1rem"}
+              >
+                <ChildTokenNodes tokens={item.tokens} />
               </List.Item>
-            ))}
-          </List.Root>
-        ) : (
-          <List.Root
-            as="ol"
-            lineHeight={value.tight ? "1.1rem" : "1.7rem"}
-            {...rest}
-          >
-            {value.items.map((item, index) => (
-              <List.Item key={index} {...rest}>
-                <List.Indicator>{index + (value.start ?? 1)}</List.Indicator>
-                <ChildNodes value={item.childNodes} {...rest} />
+            )}
+          </For>
+        </List.Root>
+      ) : (
+        <List.Root>
+          <For each={token.items}>
+            {(item, index) => (
+              <List.Item
+                key={index}
+                lineHeight={item.loose ? "1.7rem" : "1.1rem"}
+              >
+                <ChildTokenNodes tokens={item.tokens} />
               </List.Item>
-            ))}
-          </List.Root>
-        );
+            )}
+          </For>
+        </List.Root>
+      );
 
-      case "Paragraph":
-        return (
-          <Text mb="2" {...rest}>
-            <ChildNodes value={value.childNodes} {...rest} />
-          </Text>
-        );
+    case "list_item":
+      return (
+        <List.Item lineHeight={token.loose ? "1.7rem" : "1.1rem"}>
+          <ChildTokenNodes tokens={token.tokens} />
+        </List.Item>
+      );
 
-      case "Text":
-        return (
-          <Text as="span" {...rest}>
-            {value.text}
-          </Text>
-        );
+    case "paragraph":
+      return token.pre ? (
+        <chakra.pre>
+          <ChildTokenNodes tokens={token.tokens} />
+        </chakra.pre>
+      ) : (
+        <Text mb="2">
+          <ChildTokenNodes tokens={token.tokens} />
+        </Text>
+      );
 
-      case "TextStyle":
-        return value.variant === "Strong" ? (
-          <Text fontWeight="bold" {...rest}>
-            <ChildNodes value={value.childNodes} {...rest} />
-          </Text>
-        ) : (
-          <Em {...rest}>
-            <ChildNodes value={value.childNodes} {...rest} />
-          </Em>
-        );
+    case "space":
+      return <chakra.span> </chakra.span>;
 
-      case "ThematicBreak":
-        return <chakra.hr mb="4" {...rest} />;
+    case "strong":
+      return (
+        <Text fontWeight="bold">
+          <ChildTokenNodes tokens={token.tokens} />
+        </Text>
+      );
 
-      default:
-        return checkExhausted(value);
-    }
-  }, [rest, value]);
+    case "table":
+      return (
+        <Table.Root>
+          <Table.Header>
+            <Table.Row>
+              <For each={token.header}>
+                {(header, index) => (
+                  <Table.ColumnHeader
+                    key={index}
+                    textAlign={header.align ?? undefined}
+                  >
+                    <ChildTokenNodes tokens={header.tokens} />
+                  </Table.ColumnHeader>
+                )}
+              </For>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            <For each={token.rows}>
+              {(row, index) => (
+                <Table.Row key={index}>
+                  <For each={row}>
+                    {(cell, index) => (
+                      <Table.Cell
+                        key={index}
+                        textAlign={cell.align ?? undefined}
+                      >
+                        <ChildTokenNodes tokens={cell.tokens} />
+                      </Table.Cell>
+                    )}
+                  </For>
+                </Table.Row>
+              )}
+            </For>
+          </Table.Body>
+        </Table.Root>
+      );
 
-  return content;
+    case "text":
+      return (
+        <Text as="span">
+          {token.tokens != null ? (
+            <ChildTokenNodes tokens={token.tokens} />
+          ) : (
+            token.text
+          )}
+        </Text>
+      );
+    case "directive":
+      return token.element != null ? (
+        token.element
+      ) : (
+        <>
+          <Badge variant="solid">{token.name}</Badge>
+          {Object.entries(token.args ?? {}).map(([key, value]) => (
+            <Badge key={key} ml="2">
+              {value != null ? `${key} = ${decodeURIComponent(value)}` : key}
+            </Badge>
+          ))}
+        </>
+      );
+
+    default:
+      return checkExhausted(token);
+  }
 }

@@ -26,6 +26,10 @@ export default defineConfig([
     rules: {
       "no-fallthrough": ["error", { allowEmptyCase: true }],
       "default-case": "error",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
+      ],
     },
   },
 ]);

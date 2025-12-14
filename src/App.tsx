@@ -1,11 +1,30 @@
 import "@/App.css";
 import reactLogo from "@/assets/react.svg";
+import Markdown from "./components/markdown/Markdown";
 import { Card } from "@chakra-ui/react";
-import { useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import viteLogo from "/vite.svg";
+import type { Environment } from "./components/markdown/types.ts";
+
+const environment: Environment = {
+  use: function (
+    _name: string,
+    _args: Record<string, string | null> | null
+  ): ReactElement | null {
+    return null;
+  },
+};
 
 export default function App() {
   const [count, setCount] = useState(0);
+
+  const [text, setText] = useState("");
+
+  useEffect(() => {
+    void fetch("test.md")
+      .then((res) => res.text())
+      .then(setText);
+  }, []);
 
   return (
     <>
@@ -18,6 +37,9 @@ export default function App() {
         </a>
       </div>
       <h1>Vite + React</h1>
+      <div style={{ textAlign: "start" }}>
+        <Markdown template={text} environment={environment} />
+      </div>
       <Card.Root>
         <Card.Header>
           <button
