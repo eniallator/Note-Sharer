@@ -71,7 +71,10 @@ Start numbering with offset:
 
 57. foo
 1. bar
+1. [ ] Not done
+1. [x] Yass queen
 
+- Not a task
 - [ ] Hi!
 - [x] Done
 

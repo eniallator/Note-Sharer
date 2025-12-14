@@ -4,7 +4,6 @@ import { Toaster } from "@/components/ui/toaster.tsx";
 import { raise } from "@/utils/core.ts";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
 
 const rootEl =
   document.getElementById("root") ?? raise(new Error("No root element found!"));

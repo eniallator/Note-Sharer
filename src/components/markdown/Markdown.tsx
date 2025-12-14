@@ -15,7 +15,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { isNumber } from "deep-guards";
-import type { Token } from "marked";
+import type { Token, Tokens } from "marked";
 import { useMemo, type ReactElement } from "react";
 import {
   tokenizeMarkdown,
@@ -74,12 +74,7 @@ function TokenNode(props: TokenNodeProps): ReactElement {
       return <chakra.br />;
 
     case "checkbox":
-      return (
-        <Checkbox.Root checked={token.checked} size="sm">
-          <Checkbox.HiddenInput />
-          <Checkbox.Control />
-        </Checkbox.Root>
-      );
+      return <></>;
 
     case "code":
       return (
@@ -161,29 +156,20 @@ function TokenNode(props: TokenNodeProps): ReactElement {
       return token.ordered ? (
         <List.Root
           as="ol"
+          listStylePos="inside"
           {...{ start: isNumber(token.start) ? token.start : 1 }}
         >
           <For each={token.items}>
             {(item, index) => (
-              <List.Item
-                key={index}
-                lineHeight={item.loose ? "1.7rem" : "1.1rem"}
-              >
-                <ChildTokenNodes tokens={item.tokens} />
-              </List.Item>
+              <ListItem key={index} item={item} ordered={token.ordered} />
             )}
           </For>
         </List.Root>
       ) : (
-        <List.Root>
+        <List.Root listStylePos="inside">
           <For each={token.items}>
             {(item, index) => (
-              <List.Item
-                key={index}
-                lineHeight={item.loose ? "1.7rem" : "1.1rem"}
-              >
-                <ChildTokenNodes tokens={item.tokens} />
-              </List.Item>
+              <ListItem key={index} item={item} ordered={token.ordered} />
             )}
           </For>
         </List.Root>
@@ -208,13 +194,13 @@ function TokenNode(props: TokenNodeProps): ReactElement {
       );
 
     case "space":
-      return <chakra.span> </chakra.span>;
+      return <chakra.div h="2" />;
 
     case "strong":
       return (
-        <Text fontWeight="bold">
+        <chakra.strong>
           <ChildTokenNodes tokens={token.tokens} />
-        </Text>
+        </chakra.strong>
       );
 
     case "table":
@@ -282,4 +268,31 @@ function TokenNode(props: TokenNodeProps): ReactElement {
     default:
       return checkExhausted(token);
   }
+}
+
+function ListItem({
+  item,
+  ordered,
+}: {
+  item: Tokens.ListItem;
+  ordered: boolean;
+}): ReactElement {
+  return (
+    <List.Item
+      lineHeight={item.loose ? "1.9rem" : "1.3rem"}
+      css={{
+        "&::marker": { ps: "1" },
+        "& li": { ms: "3" },
+        ...(item.loose ? { "& > p": { display: "inline" } } : {}),
+      }}
+      {...(!ordered ? (item.task ? { listStyle: "none" } : { ms: "2" }) : {})}
+    >
+      {item.task && (
+        <Checkbox.Root checked={item.checked} size="sm" ms="1" me="2">
+          <Checkbox.Control />
+        </Checkbox.Root>
+      )}
+      <ChildTokenNodes tokens={item.tokens} />
+    </List.Item>
+  );
 }
