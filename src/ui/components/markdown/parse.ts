@@ -1,4 +1,3 @@
-import { tuple } from "@/utils/tuple.ts";
 import {
   Marked,
   type Links,
@@ -6,14 +5,15 @@ import {
   type Token,
   type TokenizerAndRendererExtension,
 } from "marked";
-import type { ReactElement } from "react";
-import type { Environment } from "./types.ts";
+import { tuple } from "niall-utils";
+import type { ReactNode } from "react";
+import type { Environment } from "./types.js";
 
 export interface Directive {
   type: "directive";
   name: string;
   args: Record<string, string | null> | null;
-  element: ReactElement | null;
+  node: ReactNode;
   raw: string;
 }
 
@@ -24,7 +24,7 @@ const directiveRegex =
   /^:(?<name>[^:\s?=]+)(?<args>\?[^:\s?=&]+=?[^:\s?=&]*(&[^:\s?=&]+=?[^:\s?=&]*)*)?:/;
 
 const directiveExtension = (
-  environment: Environment
+  environment: Environment,
 ): TokenizerAndRendererExtension => ({
   name: "directive",
   level: "inline",
@@ -40,14 +40,14 @@ const directiveExtension = (
                 .map((s) => {
                   const [key, value] = s.split("=");
                   return tuple(key as string, value ?? null);
-                })
+                }),
             )
           : null;
 
       return {
         type: "directive",
         name: match.groups.name,
-        element: environment.use(match.groups.name, args),
+        node: environment.use(match.groups.name, args),
         args,
         raw,
       };
@@ -59,7 +59,7 @@ const directiveExtension = (
 
 export const tokenizeMarkdown = (
   template: string,
-  environment: Environment
+  environment: Environment,
 ) => {
   const marked = new Marked({
     extensions: [directiveExtension(environment)],

@@ -1,13 +1,14 @@
 import "@/App.css";
-import { useEffect, useState, type ReactElement } from "react";
-import Markdown from "./components/markdown/Markdown";
-import type { Environment } from "./components/markdown/types.ts";
+import { useEffect, useState, type ReactNode } from "react";
+import { useParams } from "react-router";
+import Markdown from "./ui/components/markdown/Markdown";
+import type { Environment } from "./ui/components/markdown/types";
 
 const environment: Environment = {
   use: function (
     _name: string,
-    _args: Record<string, string | null> | null
-  ): ReactElement | null {
+    _args: Record<string, string | null> | null,
+  ): ReactNode {
     return null;
   },
 };
@@ -15,15 +16,13 @@ const environment: Environment = {
 export default function App() {
   const [text, setText] = useState("");
 
+  const params = useParams();
+
   useEffect(() => {
     void fetch("test.md")
       .then((res) => res.text())
       .then(setText);
   }, []);
 
-  return (
-    <div style={{ textAlign: "start" }}>
-      <Markdown template={text} environment={environment} />
-    </div>
-  );
+  return <Markdown template={text} environment={environment} />;
 }

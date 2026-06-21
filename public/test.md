@@ -107,7 +107,7 @@ console.log(foo(5));
 
 ## Directives
 
-:imdb?movie=Super%20Cool%20Movie&foo=bar&qux:
+:imdb?movie=Super%20Cool%20Movie&foo=bar&baz:
 
 :no_args:
 

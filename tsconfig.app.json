@@ -2,11 +2,9 @@
   "compilerOptions": {
     "allowImportingTsExtensions": true,
     "allowSyntheticDefaultImports": true,
-    "baseUrl": ".",
     "composite": true,
     "erasableSyntaxOnly": true,
     "declaration": true,
-    "downlevelIteration": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,

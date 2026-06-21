@@ -1,4 +1,3 @@
-import { checkExhausted } from "@/utils/core.ts";
 import {
   Badge,
   Box,
@@ -16,7 +15,8 @@ import {
 } from "@chakra-ui/react";
 import { isNumber } from "deep-guards";
 import type { Token, Tokens } from "marked";
-import { useMemo, type ReactElement } from "react";
+import { checkExhausted } from "niall-utils";
+import { useMemo, type ReactElement, type ReactNode } from "react";
 import {
   tokenizeMarkdown,
   unsafeMarkdownToken,
@@ -34,10 +34,14 @@ export default function Markdown(props: MarkdownProps): ReactElement {
 
   const tokenized = useMemo(
     () => tokenizeMarkdown(template, environment),
-    [environment, template]
+    [environment, template],
   );
 
-  return <ChildTokenNodes tokens={tokenized} />;
+  return (
+    <div style={{ textAlign: "start" }}>
+      <ChildTokenNodes tokens={tokenized} />
+    </div>
+  );
 }
 
 interface ChildTokenNodesProps {
@@ -59,10 +63,14 @@ interface TokenNodeProps {
   token: MarkdownToken;
 }
 
-function TokenNode(props: TokenNodeProps): ReactElement {
+function TokenNode(props: TokenNodeProps): ReactNode {
   const { token } = props;
 
   switch (token.type) {
+    case "def":
+    case "checkbox":
+      return null;
+
     case "blockquote":
       return (
         <Box ms="4" ps="2" borderStartWidth="4px">
@@ -72,9 +80,6 @@ function TokenNode(props: TokenNodeProps): ReactElement {
 
     case "br":
       return <chakra.br />;
-
-    case "checkbox":
-      return <></>;
 
     case "code":
       return (
@@ -95,9 +100,6 @@ function TokenNode(props: TokenNodeProps): ReactElement {
           {token.text}
         </Code>
       );
-
-    case "def":
-      return <></>;
 
     case "del":
       return (
@@ -251,17 +253,20 @@ function TokenNode(props: TokenNodeProps): ReactElement {
           )}
         </Text>
       );
+
     case "directive":
-      return token.element != null ? (
-        token.element
+      return token.node != null ? (
+        token.node
       ) : (
         <>
           <Badge variant="solid">{token.name}</Badge>
-          {Object.entries(token.args ?? {}).map(([key, value]) => (
-            <Badge key={key} ml="2">
-              {value != null ? `${key} = ${decodeURIComponent(value)}` : key}
-            </Badge>
-          ))}
+          <For each={Object.entries(token.args ?? {})}>
+            {([key, value]) => (
+              <Badge key={key} ml="2">
+                {value != null ? `${key} = ${decodeURIComponent(value)}` : key}
+              </Badge>
+            )}
+          </For>
         </>
       );
 
@@ -288,7 +293,13 @@ function ListItem({
       {...(!ordered ? (item.task ? { listStyle: "none" } : { ms: "2" }) : {})}
     >
       {item.task && (
-        <Checkbox.Root checked={item.checked} size="sm" ms="1" me="2">
+        <Checkbox.Root
+          checked={item.checked}
+          size="sm"
+          ms="1"
+          me="2"
+          bg="primary"
+        >
           <Checkbox.Control />
         </Checkbox.Root>
       )}

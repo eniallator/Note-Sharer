@@ -4,7 +4,6 @@ import typescriptParser from "@typescript-eslint/parser";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import { defineConfig, globalIgnores } from "eslint/config";
-import tslint from "typescript-eslint";
 
 export default defineConfig([
   globalIgnores(["dist"]),
@@ -12,16 +11,17 @@ export default defineConfig([
     files: ["**/*.{ts,tsx}"],
     extends: [
       jslint.configs.recommended,
-      tslint.configs.recommended,
-      tslint.configs.recommendedTypeChecked,
-      tslint.configs.strictTypeChecked,
+      tsPlugin.configs.recommended,
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
     plugins: { tsPlugin },
     languageOptions: {
       parser: typescriptParser,
-      parserOptions: { project: ["./tsconfig.app.json"] },
+      parserOptions: {
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     rules: {
       "no-fallthrough": ["error", { allowEmptyCase: true }],
